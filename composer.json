@@ -1,0 +1,14 @@
+{
+  "name": "getalby/woocommerce-nwc-payment-gateway",
+  "description": "WooCommerce Nostr Wallet Connect (NWC) Bitcoin Lightning Payment Gateway",
+  "type": "wordpress-plugin",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/getAlby/nwc-php"
+    }
+  ],
+  "require": {
+    "getalby/nwc-php": "dev-main"
+  }
+}
