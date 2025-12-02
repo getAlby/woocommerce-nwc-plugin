@@ -3,9 +3,9 @@ const { getSetting } = window.wc.wcSettings;
 const { decodeEntities } = window.wp.htmlEntities;
 const { createElement } = window.wp.element;
 
-const settings = getSetting( 'mywc_data', {} );
+const settings = getSetting( 'nwc_data', {} );
 
-const label = decodeEntities( settings.title ) || 'MyWC Gateway';
+const label = decodeEntities( settings.title ) || 'NWC Payment Gateway';
 
 const Content = () => {
     return decodeEntities( settings.description || '' );
@@ -17,7 +17,7 @@ const Label = ( props ) => {
 };
 
 registerPaymentMethod( {
-    name: 'mywc',
+    name: 'nwc',
     label: createElement( Label ),
     content: createElement( Content ),
     edit: createElement( Content ),

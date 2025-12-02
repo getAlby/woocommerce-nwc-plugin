@@ -1,28 +1,28 @@
 <?php
 /**
- * WooCommerce Blocks support for MyWC Gateway
+ * WooCommerce Blocks support for NWC Payment Gateway
  */
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
 
-final class WC_MyWC_Blocks_Support extends AbstractPaymentMethodType {
+final class WC_NWC_Blocks_Support extends AbstractPaymentMethodType {
 
     // The gateway instance.
     private $gateway;
 
     // Payment method name/id/slug.
-    protected $name = 'mywc';
+    protected $name = 'nwc';
 
     // Initializes the payment method type.
     public function initialize() {
-        $this->settings = get_option( 'woocommerce_mywc_settings', [] );
+        $this->settings = get_option( 'woocommerce_nwc_settings', [] );
         $gateways = WC()->payment_gateways->payment_gateways();
         $this->gateway  = isset( $gateways[$this->name] ) ? $gateways[$this->name] : null;
         
         // Debug logging
         if ( class_exists( 'WC_Logger' ) ) {
             $logger = new WC_Logger();
-            $logger->add( 'mywc', 'WC_MyWC_Blocks_Support initialized' );
+            $logger->add( 'nwc', 'WC_NWC_Blocks_Support initialized' );
         }
     }
 
@@ -33,13 +33,13 @@ final class WC_MyWC_Blocks_Support extends AbstractPaymentMethodType {
 
     // Returns an array of scripts/handles to be registered for this payment method.
     public function get_payment_method_script_handles() {
-        $script_path = 'assets/js/mywc-blocks.js';
+        $script_path = 'assets/js/nwc-blocks.js';
         $script_url = plugins_url( $script_path, dirname( __FILE__ ) );
         
         // Only register script if the file exists
         if ( file_exists( plugin_dir_path( dirname( __FILE__ ) ) . $script_path ) ) {
             wp_register_script(
-                'mywc-gateway-blocks',
+                'nwc-gateway-blocks',
                 $script_url,
                 array(
                     'wc-blocks-registry',
@@ -52,7 +52,7 @@ final class WC_MyWC_Blocks_Support extends AbstractPaymentMethodType {
                 true
             );
             
-            return [ 'mywc-gateway-blocks' ];
+            return [ 'nwc-gateway-blocks' ];
         }
         
         return [];

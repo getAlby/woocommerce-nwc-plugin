@@ -1,10 +1,9 @@
-
 <?php
 /**
- * Plugin Name: WooCommerce Nostr Wallet Connect (NWC) Bitcoin Lightning Payment Gateway
- * Description: Accept lightning payments directly to your own wallet using NWC
+ * Plugin Name: WooCommerce NWC Plugin
+ * Description: Accept bitcoin lightning payments directly to your own wallet using a Nostr Wallet Connect (NWC) Payment Gateway
  * Version: 0.1.0
- * Author: Alby Team
+ * Author: Alby
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -17,16 +16,19 @@ if ( ! defined( 'WPINC' ) ) {
 add_action( 'plugins_loaded', function() {
     if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
         add_action( 'admin_notices', function() {
-            echo '<div class="notice notice-error"><p>WooCommerce is required for My WC Payment Gateway.</p></div>';
+            echo '<div class="notice notice-error"><p>WooCommerce is required for Woocommerce NWC Plugin.</p></div>';
         } );
         return;
     }
 
-    class WC_Gateway_MyWC extends WC_Payment_Gateway {
+    class WC_Gateway_NWC extends WC_Payment_Gateway {
+    
+    protected $nwc_uri;
+    
     public function __construct() {
-        $this->id                 = 'mywc';
-        $this->method_title       = __( 'MyWC Gateway', 'my-wc-plugin' );
-        $this->method_description = __( 'A local/dev payment gateway scaffold.', 'my-wc-plugin' );
+        $this->id                 = 'nwc';
+        $this->method_title       = __( 'NWC Payment Gateway', 'woocommerce-nwc-plugin' );
+        $this->method_description = __( 'Accept bitcoin lightning payments directly to your own wallet using Nostr Wallet Connect.', 'woocommerce-nwc-plugin' );
         $this->has_fields         = false;
 
         $this->supports = array(
@@ -39,11 +41,10 @@ add_action( 'plugins_loaded', function() {
         $this->init_settings();
 
         // Get settings values.
-        $this->title       = $this->get_option( 'title', 'Credit Card (MyWC)' );
+        $this->title       = $this->get_option( 'title', 'Bitcoin Lightning' );
         $this->description = $this->get_option( 'description', '' );
         $this->enabled     = $this->get_option( 'enabled', 'no' );
-        $this->testmode    = $this->get_option( 'testmode', 'no' );
-        $this->api_key     = $this->get_option( 'api_key', '' );
+        $this->nwc_uri     = $this->get_option( 'nwc_uri', '' );
 
         
 
@@ -55,14 +56,14 @@ add_action( 'plugins_loaded', function() {
         // REST API endpoints
         add_action( 'rest_api_init', function() {
             // Invoice display endpoint
-            register_rest_route( 'mywc/v1', '/invoice/(?P<order_key>[a-zA-Z0-9_-]+)', array(
+            register_rest_route( 'nwc/v1', '/invoice/(?P<order_key>[a-zA-Z0-9_-]+)', array(
                 'methods'  => 'GET',
                 'callback' => array( $this, 'invoice_display_handler' ),
                 'permission_callback' => '__return_true',
             ) );
             
             // Payment status polling endpoint
-            register_rest_route( 'mywc/v1', '/payment-status/(?P<order_key>[a-zA-Z0-9_-]+)', array(
+            register_rest_route( 'nwc/v1', '/payment-status/(?P<order_key>[a-zA-Z0-9_-]+)', array(
                 'methods'  => 'GET',
                 'callback' => array( $this, 'payment_status_handler' ),
                 'permission_callback' => '__return_true',
@@ -70,7 +71,7 @@ add_action( 'plugins_loaded', function() {
         } );
     }
 
-    public function validate_api_key_field( $key, $value ) {
+    public function validate_nwc_uri_field( $value ) {
         // don't change the value (otherwise the NWC url is incorrectly encoded)
         return $value;
     }
@@ -82,33 +83,28 @@ add_action( 'plugins_loaded', function() {
     public function init_form_fields() {
         $this->form_fields = array(
             'enabled' => array(
-                'title'   => __( 'Enable/Disable', 'my-wc-plugin' ),
+                'title'   => __( 'Enable/Disable', 'woocommerce-nwc-plugin' ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Enable MyWC Payment', 'my-wc-plugin' ),
+                'label'   => __( 'Enable NWC Payment', 'woocommerce-nwc-plugin' ),
                 'default' => 'no',
             ),
             'title' => array(
-                'title'       => __( 'Title', 'my-wc-plugin' ),
+                'title'       => __( 'Title', 'woocommerce-nwc-plugin' ),
                 'type'        => 'text',
-                'description' => __( 'Title shown at checkout.', 'my-wc-plugin' ),
-                'default'     => __( 'Credit Card (MyWC)', 'my-wc-plugin' ),
+                'description' => __( 'Title shown at checkout.', 'woocommerce-nwc-plugin' ),
+                'default'     => __( 'Bitcoin Lightning', 'woocommerce-nwc-plugin' ),
             ),
             'description' => array(
-                'title'       => __( 'Description', 'my-wc-plugin' ),
+                'title'       => __( 'Description', 'woocommerce-nwc-plugin' ),
                 'type'        => 'textarea',
-                'default'     => '',
+                'default'     => __( 'Pay with any bitcoin lightning wallet', 'woocommerce-nwc-plugin' ),
             ),
-            'testmode' => array(
-                'title'       => __( 'Test mode', 'my-wc-plugin' ),
-                'type'        => 'checkbox',
-                'label'       => __( 'Enable test mode', 'my-wc-plugin' ),
-                'default'     => 'yes',
-            ),
-            'api_key' => array(
-                'title'       => __( 'API Key', 'my-wc-plugin' ),
+            'nwc_uri' => array(
+                'title'       => __( 'Receive-Only NWC Connection Secret', 'woocommerce-nwc-plugin' ),
                 'type'        => 'text',
-                'description' => __( 'API key for the payment provider.', 'my-wc-plugin' ),
+                'description' => __( 'The Nostr Wallet Connect URI created by your lightning wallet. Only make_invoice and lookup_invoice permissions are needed.', 'woocommerce-nwc-plugin' ),
                 'default'     => '',
+                'sanitize_callback' => array( $this, 'validate_nwc_uri_field' ),
             ),
         );
     }
@@ -152,37 +148,38 @@ add_action( 'plugins_loaded', function() {
 
     public function process_payment( $order_id ) {
         try {
-        $order = wc_get_order( $order_id );
-        $satoshi_amount = $this->get_satoshi_amount( $order->get_total(), get_woocommerce_currency() );
+            $order = wc_get_order( $order_id );
+            $satoshi_amount = $this->get_satoshi_amount( $order->get_total(), get_woocommerce_currency() );
 
-        $client = new NWC\Client($this->api_key);
-        $client->init();
-        $invoiceResponse = $client->addInvoice([
-            'value' => $satoshi_amount,
-            'memo' => 'Order #' . $order->get_order_number(),
-        ]);
-        $invoice = $invoiceResponse['payment_request'];
-        $payment_hash = $invoiceResponse['r_hash'];
-        
-        // Store invoice and payment details in order metadata
-        $order->update_meta_data( '_mywc_invoice', $invoice );
-        $order->update_meta_data( '_mywc_payment_hash', $payment_hash );
-        $order->update_meta_data( '_mywc_invoice_timestamp', time() );
-        
-        // Set order to pending (waiting for payment)
-        $order->update_status( 'pending', __( 'Awaiting Lightning payment.', 'my-wc-plugin' ) );
-        wc_reduce_stock_levels( $order_id );
-        $order->save();
+            $this->log('This NWC URL: ' . $this->nwc_uri);
+            $client = new NWC\Client($this->nwc_uri);
+            $client->init();
+            $invoiceResponse = $client->addInvoice([
+                'value' => $satoshi_amount,
+                'memo' => 'Order #' . $order->get_order_number(),
+            ]);
+            $invoice = $invoiceResponse['payment_request'];
+            $payment_hash = $invoiceResponse['r_hash'];
+            
+            // Store invoice and payment details in order metadata
+            $order->update_meta_data( '_nwc_invoice', $invoice );
+            $order->update_meta_data( '_nwc_payment_hash', $payment_hash );
+            $order->update_meta_data( '_nwc_invoice_timestamp', time() );
+            
+            // Set order to pending (waiting for payment)
+            $order->update_status( 'pending', __( 'Awaiting Lightning payment.', 'woocommerce-nwc-plugin' ) );
+            wc_reduce_stock_levels( $order_id );
+            $order->save();
 
-        // Log
-        $this->log( sprintf( 'Order %d created with Lightning invoice, hash=%s', $order_id, $payment_hash ) );
+            // Log
+            $this->log( sprintf( 'Order %d created with Lightning invoice, hash=%s', $order_id, $payment_hash ) );
 
-        // Redirect to invoice display page instead of thank you page
-        $invoice_url = rest_url( 'mywc/v1/invoice/' . $order->get_order_key() );
-        return array(
-            'result'   => 'success',
-            'redirect' => $invoice_url,
-        );
+            // Redirect to invoice display page instead of thank you page
+            $invoice_url = rest_url( 'nwc/v1/invoice/' . $order->get_order_key() );
+            return array(
+                'result'   => 'success',
+                'redirect' => $invoice_url,
+            );
         } catch (\Exception $e) {
             $this->log('Failed to process payment: ' . $e->getMessage());
             throw $e;
@@ -198,10 +195,10 @@ add_action( 'plugins_loaded', function() {
             return;
         }
         
-        $invoice = $order->get_meta( '_mywc_invoice' );
+        $invoice = $order->get_meta( '_nwc_invoice' );
         $order_id = $order->get_id();
         $order_total = $order->get_total();
-        $status_url = rest_url( 'mywc/v1/payment-status/' . $order_key );
+        $status_url = rest_url( 'nwc/v1/payment-status/' . $order_key );
         
         // Output HTML directly
         header( 'Content-Type: text/html; charset=utf-8' );
@@ -262,11 +259,12 @@ add_action( 'plugins_loaded', function() {
             return new WP_REST_Response( array( 'error' => 'Invalid order' ), 404 );
         }
         
-        $payment_hash = $order->get_meta( '_mywc_payment_hash' );
+        $payment_hash = $order->get_meta( '_nwc_payment_hash' );
         $is_paid = false;
 
         try {
-            $client = new NWC\Client($this->api_key);
+            $this->log('This NWC URL: ' . $this->nwc_uri);
+            $client = new NWC\Client($this->nwc_uri);
             $client->init();
             $invoice = $client->getInvoice($payment_hash);
             $settled = !empty($invoice["settled_at"]);
@@ -294,7 +292,7 @@ add_action( 'plugins_loaded', function() {
     protected function log( $message ) {
         if ( class_exists( 'WC_Logger' ) ) {
             $logger = new WC_Logger();
-            $logger->add( 'mywc', $message );
+            $logger->add( 'nwc', $message );
         } else {
             error_log( $message );
         }
@@ -325,7 +323,7 @@ add_action( 'plugins_loaded', function() {
 
     // Register gateway with WooCommerce
     add_filter( 'woocommerce_payment_gateways', function( $methods ) {
-        $methods[] = 'WC_Gateway_MyWC';
+        $methods[] = 'WC_Gateway_NWC';
         return $methods;
     } );
 } );
@@ -341,11 +339,11 @@ add_action( 'before_woocommerce_init', function() {
 // Register WooCommerce Blocks support
 add_action( 'woocommerce_blocks_loaded', function() {
     if ( class_exists( '\Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) {
-        require_once plugin_dir_path( __FILE__ ) . 'includes/class-wc-mywc-blocks-support.php';
+        require_once plugin_dir_path( __FILE__ ) . 'includes/class-wc-nwc-blocks-support.php';
         add_action(
             'woocommerce_blocks_payment_method_type_registration',
             function( \Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
-                $payment_method_registry->register( new WC_MyWC_Blocks_Support() );
+                $payment_method_registry->register( new WC_NWC_Blocks_Support() );
             }
         );
     }
