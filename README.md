@@ -9,7 +9,7 @@ Accept Bitcoin Lightning payments directly to your [NWC](https://nwc.dev)-enable
 
 ## Installation
 
-1. Download the latest release ZIP file
+1. Download the ZIP file from the [latest release](/releases)
 2. In WordPress admin, go to Plugins → Add New → Upload Plugin
 3. Upload and activate the plugin
 
@@ -20,4 +20,4 @@ Accept Bitcoin Lightning payments directly to your [NWC](https://nwc.dev)-enable
 3. Click "Manage"
 4. Enter your NWC connection string into the "Receive-Only NWC Connection Secret" field
 
-That's it. Your store is ready to accept Lightning payments.
+That's it. Your store is ready to accept Lightning payments!
