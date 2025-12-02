@@ -18,6 +18,6 @@ Accept Bitcoin Lightning payments directly to your [NWC](https://nwc.dev)-enable
 1. Navigate to WooCommerce → Settings → Payments
 2. Enable "NWC" payment method
 3. Click "Manage"
-4. Enter your NWC connection string. You only need to give receive access to your lightning wallet.
+4. Enter your NWC connection string into the "Receive-Only NWC Connection Secret" field
 
 That's it. Your store is ready to accept Lightning payments.
